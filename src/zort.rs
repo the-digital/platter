@@ -13,22 +13,22 @@ pub struct Zort<T: Iterator> {
 
 #[allow(dead_code)]
 impl<T: Iterator> Zort<T> {
-    pub fn new(a: T, b: T, ranker: Ranker<T::Item>) -> Self {
+    pub fn new(a: T, b: T, ranker: Ranker<T::Item>, trail: usize) -> Self {
         Self {
             a: a.peekable(),
             b: b.peekable(),
             ranker,
             decider: Self::prefer_left,
-            trail: 0
+            trail,
         }
     }
 
-    fn set_decider(&mut self, decider: Decider<T::Item>) -> &mut Self {
+    pub fn set_decider(&mut self, decider: Decider<T::Item>) -> &mut Self {
         self.decider = decider;
         self
     }
 
-    fn set_trail(&mut self, trail: usize) -> &mut Self {
+    pub fn set_trail(&mut self, trail: usize) -> &mut Self {
         self.trail = trail;
         self
     }
@@ -74,7 +74,7 @@ mod disjoint {
     fn ranker(value: &&usize) -> usize { **value }
 
     fn assert_sorted(a: Vec<usize>, b: Vec<usize>) {
-        let mut z = Zort::new(a.iter(), b.iter(), ranker);
+        let mut z = Zort::new(a.iter(), b.iter(), ranker, 0);
         assert_eq!(z.next(), Some(&0));
         assert_eq!(z.next(), Some(&1));
         assert_eq!(z.next(), Some(&2));
