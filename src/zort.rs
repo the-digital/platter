@@ -11,15 +11,30 @@ pub struct Zort<T: Iterator> {
     trail: usize,
 }
 
+#[allow(dead_code)]
 impl<T: Iterator> Zort<T> {
-    pub fn new(
-        a: T, b: T,
-        ranker: Ranker<T::Item>,
-        decider: Decider<T::Item>,
-        trail: usize,
-    ) -> Self {
-        Self { a: a.peekable(), b: b.peekable(), ranker, decider, trail }
+    pub fn new(a: T, b: T, ranker: Ranker<T::Item>) -> Self {
+        Self {
+            a: a.peekable(),
+            b: b.peekable(),
+            ranker,
+            decider: Self::prefer_left,
+            trail: 0
+        }
     }
+
+    fn set_decider(&mut self, decider: Decider<T::Item>) -> &mut Self {
+        self.decider = decider;
+        self
+    }
+
+    fn set_trail(&mut self, trail: usize) -> &mut Self {
+        self.trail = trail;
+        self
+    }
+
+    fn prefer_left(left: T::Item, _: T::Item) -> T::Item { left }
+    fn prefer_right(_: T::Item, right: T::Item) -> T::Item { right }
 }
 
 impl<T: Iterator> Iterator for Zort<T> {
@@ -57,22 +72,46 @@ mod disjoint {
     use super::Zort;
 
     fn ranker(value: &&usize) -> usize { **value }
-    fn decider<'a>(left: &'a usize, _: &usize) -> &'a usize { left }
+
+    fn assert_sorted(a: Vec<usize>, b: Vec<usize>) {
+        let mut z = Zort::new(a.iter(), b.iter(), ranker);
+        assert_eq!(z.next(), Some(&0));
+        assert_eq!(z.next(), Some(&1));
+        assert_eq!(z.next(), Some(&2));
+        assert_eq!(z.next(), Some(&3));
+        assert_eq!(z.next(), Some(&4));
+        assert_eq!(z.next(), Some(&5));
+        assert_eq!(z.next(), Some(&6));
+        assert_eq!(z.next(), Some(&7));
+        assert_eq!(z.next(), Some(&8));
+        assert_eq!(z.next(), Some(&9));
+    }
 
     #[test]
-    fn basic() {
+    fn a_then_b() {
+        let a: Vec<usize> = vec![0, 1, 2, 3, 4];
+        let b: Vec<usize> = vec![5, 6, 7, 8, 9];
+        assert_sorted(a, b);
+    }
+
+    #[test]
+    fn b_then_a() {
+        let a: Vec<usize> = vec![5, 6, 7, 8, 9];
+        let b: Vec<usize> = vec![0, 1, 2, 3, 4];
+        assert_sorted(a, b);
+    }
+
+    #[test]
+    fn alternating() {
         let a: Vec<usize> = vec![1, 3, 5, 7, 9];
         let b: Vec<usize> = vec![0, 2, 4, 6, 8];
-        let mut c = Zort::new(a.iter(), b.iter(), ranker, decider, 0);
-        assert_eq!(c.next(), Some(&0));
-        assert_eq!(c.next(), Some(&1));
-        assert_eq!(c.next(), Some(&2));
-        assert_eq!(c.next(), Some(&3));
-        assert_eq!(c.next(), Some(&4));
-        assert_eq!(c.next(), Some(&5));
-        assert_eq!(c.next(), Some(&6));
-        assert_eq!(c.next(), Some(&7));
-        assert_eq!(c.next(), Some(&8));
-        assert_eq!(c.next(), Some(&9));
+        assert_sorted(a, b);
+    }
+
+    #[test]
+    fn random() {
+        let a: Vec<usize> = vec![1, 4, 6, 8, 9];
+        let b: Vec<usize> = vec![0, 2, 3, 5, 7];
+        assert_sorted(a, b);
     }
 }
